@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <!--
+        跨域是怎么引起
+        我在a 站点得到一个页面，我在a 站点通过XMLHttpRequest 去给b 站点发生一个
+     请求，所以就产生了一个跨域。
+        我们跨域：协议，端口，域名不相同，所以才跨域
+        如果我们去大公司，我们应该是会碰到跨域问题.
+        因为我们一个公司大了之后，网站的页面就多了，
+        为了对这些页面进行分类，我们就采用二级域名。
+        我们通过XMLHttpRequst 对象访问跨域，但是我们使用script 标签发送就不跨域.
+        script  我们把这种跨域，叫做jsonp
+        底层使用script 发送请求，传递给服务器一个回调函数，服务端返回的数据是一个回调函数的调用
+        但是这种方式只支持get 方式的跨域，因为script 标签发送请求。
+        jsonp 缺点只支持get ，但是如果是post 方式就不支持. cors 跨域
+    -->
+    <style>
+        .main{
+            width: 700px;
+            margin: 100px auto;
+        }
+        input[type=text]{
+            width: 500px;
+            font-size: 28px;
+        }
+        input[type=button]{
+            font-size: 26px;
+        }
+        .message{
+            border: 1px solid #ccc;
+            width: 500px;
+        }
+        .show{
+             display: none;
+        }
+
+        li{
+            list-style: none;
+            margin: 0;
+            padding:5px;
+        }
+    </style>
+    <script src="libs/angular.min.js"></script>
+    <script>
+           var App=angular.module("app",[]);
+
+           App.controller("appController",["$scope","$http",function($scope,$http){
+                $scope.flag=true;
+                $scope.search=function(){
+                    //就可以去捕获到事件了。
+                    if($scope.keywords.length>0){
+                            //发送ajax 的跨域请求.
+                             $scope.flag=false;
+                             /*
+                             *  要使用angular 去发送跨域的请求了.
+                             *  angular 支持jsonp
+                             *  底层就会使用script 标签发送请求
+                             *  还会自己取创建一个callback的参数发送到服务器.
+                             *  angular.callbacks._0 函数的名称
+                             *  底层会创建这样的一个函数 callbacks
+                             * */
+                             $http({
+                                  url:"https://sug.so.360.cn/suggest?encodein=utf-8&encodeout=utf-8&format=json&fields=word,obdata&word="+$scope.keywords,
+                                  method:"jsonp",
+                                  params:{
+                                       /*
+                                        固定写法
+                                       *跨域，jsonp 需要
+                                       * 客户端支持 1： 支持传递一个callback 参数到服务器。script 标签发送请求
+                                       * 服务端支持 2： 必须返回的是一个函数的调用 服务端必须接受这个callback 参数
+                                       * 将后台要返回的数据包在 getInfo({})
+                                       * 占位符，必须是这样来写.
+                                       * */
+                                       callback:'JSON_CALLBACK'
+                                  }
+                             }).success(function(data){
+                                    $scope.list=data.result;
+                             })
+                    }else{
+                            //隐藏这个内容.
+                            $scope.flag=true;
+                    }
+                }
+
+           }])
+    </script>
+
+</head>
+<body>
+<div class="main" ng-app="app" ng-controller="appController">
+    <!--  我在这里去访问360 搜索的接口. -->
+    <input type="text" id="keywords" ng-model="keywords" ng-keyup="search()"><input type="button" value="传智一下">
+    <div class="message" ng-class="{'show':flag}">
+            <!--我要在这里去遍历数据-->
+            <li ng-repeat="item in list">{{item.word}}</li>
+    </div>
+</div>
+
+</body>
+</html>
